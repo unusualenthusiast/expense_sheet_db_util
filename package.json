@@ -1,0 +1,19 @@
+{
+  "name": "expense_sheet_db_util",
+  "version": "1.0.0",
+  "description": "Utility to upload the data from expense sheets to postgres database",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean_start": "DB_MODE=CLEAN node src/index",
+    "start": "DB_MODE=NORMAL node src/index"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "node-xlsx": "^0.24.0",
+    "pg": "^8.13.1"
+  }
+}
