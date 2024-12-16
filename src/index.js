@@ -13,7 +13,7 @@ if(DB_MODE === CLEAN_DB_MODE) {
 }
 
 const data = trasnformer(getDataFromSheet([FILE_NAME]));
-console.log(Array.from(new Set(data.map(x => x.TYPE))).sort());
+
 }
 
 

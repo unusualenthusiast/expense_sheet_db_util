@@ -1,5 +1,5 @@
 const { DB_SCHEMA } = require("../config");
-const { SYSTEM_DB_USER } = require("../constants");
+const { SYSTEM_DB_USER, EXPENSE_TYPE, EXPENSE_SUB_TYPE } = require("../constants");
 const { getDBConnection } = require("./createConnection");
 
 async function executeDDL() {
@@ -144,7 +144,8 @@ async function executeDML() {
     await dbConnection.connect();
     console.log(`DB Connection(${connectId}) is started`);
     await insertUserTable(dbConnection);
-    await insertExpenseUserTable(dbConnection);
+    await insertExpenseTypeTable(dbConnection);
+    await insertExpenseSubTypeTable(dbConnection);
   }
   catch (err) {
     console.error('Error connecting or executing queries in PostgreSQL database', err);
@@ -171,15 +172,42 @@ async function insertUserTable(dbConnection) {
     throw (err);
   }
 }
-async function insertExpenseUserTable(dbConnection) {
+async function insertExpenseTypeTable(dbConnection) {
   let query = `
-      INSERT INTO ${DB_SCHEMA}.EXPENSE_TYPE(name, createdBy, updatedBy) VALUES      
+      INSERT INTO ${DB_SCHEMA}.EXPENSE_TYPE(name, created_by, updated_by) VALUES
     `;
   let values = [];
-  
+  const keys = Object.keys(EXPENSE_TYPE);
+  keys.forEach((key, keyInd) => {
+    query += "($" + (keyInd+1) + ", 1, 1)" + ((keyInd + 1 === keys.length) ? ";": ", ");
+    values.push(EXPENSE_TYPE[key]); 
+  })
   try {
     await dbConnection.query(query, values);
-    console.log("insertUserTable - query executed");
+    console.log("insertExpenseTypeTable - query executed");
+  }
+  catch (err) {
+    console.log("Error in executing", err);
+    throw (err);
+  }
+}
+async function insertExpenseSubTypeTable(dbConnection) {
+  let query = `
+      INSERT INTO ${DB_SCHEMA}.EXPENSE_SUB_TYPE(name, type_id, created_by, updated_by) VALUES
+    `;
+  let values = [];
+  const keys = Object.keys(EXPENSE_SUB_TYPE);
+  let count = 0;
+  keys.forEach((key, keyInd) => {
+    EXPENSE_SUB_TYPE[key].forEach((val, valInd) => {
+      query += "($" + (++count) + ", $" + (++count) + ", 1, 1)" + ((valInd + 1 === EXPENSE_SUB_TYPE[key].length && keyInd + 1 === keys.length) ? ";": ", ");
+      values.push(val); 
+      values.push(keyInd+1);
+    });    
+  });
+  try {
+    await dbConnection.query(query, values);
+    console.log("insertExpenseSubTypeTable - query executed");
   }
   catch (err) {
     console.log("Error in executing", err);
