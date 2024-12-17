@@ -1,5 +1,5 @@
 const { DB_SCHEMA } = require("../config");
-const { SYSTEM_DB_USER, EXPENSE_TYPE, EXPENSE_SUB_TYPE } = require("../constants");
+const { SYSTEM_DB_USER, EXPENSE_TYPE, EXPENSE_SUB_TYPE, FIRST_DB_USER } = require("../constants");
 const { getDBConnection } = require("./createConnection");
 
 async function executeDDL() {
@@ -57,11 +57,12 @@ async function createUserTable(dbConnection) {
   const query = `
     CREATE TABLE ${DB_SCHEMA}.USER (
       id serial PRIMARY KEY,
-      username VARCHAR(50),
+      username VARCHAR(50) NOT NULL,
       firstname VARCHAR(50),
       lastname VARCHAR(50),
-      created_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      email text UNIQUE,
+      createdTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
   try {
@@ -77,11 +78,11 @@ async function createExpenseTypeTable(dbConnection) {
   const query = `
     CREATE TABLE ${DB_SCHEMA}.EXPENSE_TYPE (
       id serial PRIMARY KEY,
-      name VARCHAR(50),
-      created_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      created_by INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
-      updated_by INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
+      name VARCHAR(50) UNIQUE NOT NULL,
+      createdTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      createdBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
+      updatedBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
     );
   `;
   try {
@@ -97,12 +98,12 @@ async function createExpenseSubTypeTable(dbConnection) {
   const query = `
     CREATE TABLE ${DB_SCHEMA}.EXPENSE_SUB_TYPE (
       id serial PRIMARY KEY,
-      name VARCHAR(50),
+      name VARCHAR(50) UNIQUE NOT NULL,
       type_id INT NOT NULL REFERENCES ${DB_SCHEMA}.EXPENSE_TYPE(id),
-      created_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      created_by INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
-      updated_by INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
+      createdTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      createdBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
+      updatedBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
     );
   `;
   try {
@@ -121,10 +122,10 @@ async function createExpenseTable(dbConnection) {
       sub_type_id INT NOT NULL REFERENCES ${DB_SCHEMA}.EXPENSE_SUB_TYPE(id),
       amount DECIMAL(12,2),
       description VARCHAR(500),
-      created_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      created_by INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
-      updated_by INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
+      createdTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      createdBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
+      updatedBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
     );
   `;
   try {
@@ -159,10 +160,10 @@ async function executeDML() {
 }
 async function insertUserTable(dbConnection) {
   const query = `
-      INSERT INTO ${DB_SCHEMA}.USER(username, firstname, lastname) VALUES 
-      ($1, $2, $3);
+      INSERT INTO ${DB_SCHEMA}.USER(username, firstname, lastname, email) VALUES 
+      ($1, $2, $3, $4), ($5, $6, $7, $8);
     `;
-  const values = [SYSTEM_DB_USER, SYSTEM_DB_USER, SYSTEM_DB_USER];
+  const values = [SYSTEM_DB_USER, SYSTEM_DB_USER, SYSTEM_DB_USER, null, FIRST_DB_USER.username, FIRST_DB_USER.firstname, FIRST_DB_USER.lastname, null];
   try {
     await dbConnection.query(query, values);
     console.log("insertUserTable - query executed");
@@ -174,7 +175,7 @@ async function insertUserTable(dbConnection) {
 }
 async function insertExpenseTypeTable(dbConnection) {
   let query = `
-      INSERT INTO ${DB_SCHEMA}.EXPENSE_TYPE(name, created_by, updated_by) VALUES
+      INSERT INTO ${DB_SCHEMA}.EXPENSE_TYPE(name, createdBy, updatedBy) VALUES
     `;
   let values = [];
   const keys = Object.keys(EXPENSE_TYPE);
@@ -193,7 +194,7 @@ async function insertExpenseTypeTable(dbConnection) {
 }
 async function insertExpenseSubTypeTable(dbConnection) {
   let query = `
-      INSERT INTO ${DB_SCHEMA}.EXPENSE_SUB_TYPE(name, type_id, created_by, updated_by) VALUES
+      INSERT INTO ${DB_SCHEMA}.EXPENSE_SUB_TYPE(name, type_id, createdBy, updatedBy) VALUES
     `;
   let values = [];
   const keys = Object.keys(EXPENSE_SUB_TYPE);
@@ -214,7 +215,6 @@ async function insertExpenseSubTypeTable(dbConnection) {
     throw (err);
   }
 }
-
 
 module.exports = {
   executeDDL,

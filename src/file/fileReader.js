@@ -15,15 +15,16 @@ function getDataFromSheet(fileNames) {
                     if (rowInd > 0) {
                         //Neglecting first row as it is column header
                         const object = {};
-                        row.map((value, valueInd) => {
-                            //
-                            if(valueInd === 0)
-                                object[SHEET_COLS[valueInd]] = new Date(Date.UTC(0, 0, value - 1));
-                            else
-                            object[SHEET_COLS[valueInd]] = value;
-                        });
-                        if(Object.keys(object).length > 0)
-                            data.push(object);
+                        if (row.length > 0 && row[0] && row[6]) {
+                            row.map((value, valueInd) => {
+                                if (valueInd === 0)
+                                    object[SHEET_COLS[valueInd]] = new Date(Date.UTC(0, 0, value - 1));
+                                else
+                                    object[SHEET_COLS[valueInd]] = value;
+                            });
+                            if (Object.keys(object).length > 0)
+                                data.push(object);
+                        }
                     }
                 });
             }

@@ -5,6 +5,11 @@ module.exports = {
     CLEAN_DB_MODE: 'CLEAN',
     NORMAL_DB_MODE: 'NORMAL',
     SYSTEM_DB_USER: 'SYSTEM',
+    FIRST_DB_USER: {
+        username: 'allanarul',
+        firstname: 'Allan',
+        lastname: 'Arul'
+    },
     EXPENSE_TYPE: {
         SPENDING_TYPE: 'spending',
         SAVINGORINVESTMENT_TYPE: 'saving_investment'
