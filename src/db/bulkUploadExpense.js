@@ -22,15 +22,19 @@ async function bulkUploadExpenseWrapper(data) {
 }
 async function bulkUploadExpense(dbConnection, data) {
     let query = `
-      INSERT INTO ${DB_SCHEMA}.EXPENSE(sub_type_id, amount, description, createdBy, updatedBy) VALUES      
+      INSERT INTO ${DB_SCHEMA}.EXPENSE(subTypeId, amount, description, createdTs, updatedTs, createdBy, updatedBy) VALUES
     `;
     let values = [];
     let count = 0;
     data.forEach((val, valInd) => {
-        query += "($" + (++count) + ", $" + (++count) + ", $" + (++count) + ", 2, 2)" + ((valInd + 1 === data.length) ? ";" : ", ");
+        query += "($" + (++count) + ", $" + (++count) + ", $" + (++count) + ", $" + (++count) + ", $" + (++count) + ", 2, 2)" + ((valInd + 1 === data.length) ? ";" : ", ");
         values.push(val.subTypeId);
         values.push(val.amount ? val.amount: 0);
         values.push(val.description);
+        if(isNaN(val.createdBy))
+            console.log("bulkUpload", val.description)
+        values.push(val.createdBy);
+        values.push(val.updatedBy)
     }); 
     try {
         await dbConnection.query(query, values);

@@ -14,8 +14,9 @@ async function executeDDL() {
     await createUserTable(dbConnection);
     await createExpenseTypeTable(dbConnection);
     await createExpenseSubTypeTable(dbConnection);
+    await createExpenseTagTable(dbConnection);
     await createExpenseTable(dbConnection);
-
+    await createExpenseTagJunctionTable(dbConnection);
   }
   catch (err) {
     console.error('Error connecting or executing queries in PostgreSQL database', err);
@@ -61,8 +62,9 @@ async function createUserTable(dbConnection) {
       firstname VARCHAR(50),
       lastname VARCHAR(50),
       email text UNIQUE,
-      createdTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updatedTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      activeFlag CHAR(1) NOT NULL DEFAULT 'Y',
+      createdTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `;
   try {
@@ -79,8 +81,9 @@ async function createExpenseTypeTable(dbConnection) {
     CREATE TABLE ${DB_SCHEMA}.EXPENSE_TYPE (
       id serial PRIMARY KEY,
       name VARCHAR(50) UNIQUE NOT NULL,
-      createdTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updatedTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      activeFlag CHAR(1) NOT NULL DEFAULT 'Y',
+      createdTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       createdBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
       updatedBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
     );
@@ -99,9 +102,10 @@ async function createExpenseSubTypeTable(dbConnection) {
     CREATE TABLE ${DB_SCHEMA}.EXPENSE_SUB_TYPE (
       id serial PRIMARY KEY,
       name VARCHAR(50) UNIQUE NOT NULL,
-      type_id INT NOT NULL REFERENCES ${DB_SCHEMA}.EXPENSE_TYPE(id),
-      createdTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updatedTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      typeId INT NOT NULL REFERENCES ${DB_SCHEMA}.EXPENSE_TYPE(id),
+      activeFlag CHAR(1) NOT NULL DEFAULT 'Y',
+      createdTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       createdBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
       updatedBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
     );
@@ -115,15 +119,38 @@ async function createExpenseSubTypeTable(dbConnection) {
     throw (err);
   }
 }
+async function createExpenseTagTable(dbConnection) {
+  const query = `
+    CREATE TABLE ${DB_SCHEMA}.EXPENSE_TAG (
+      id serial PRIMARY KEY,
+      name VARCHAR(50) UNIQUE NOT NULL,
+      activeFlag CHAR(1) NOT NULL DEFAULT 'Y',
+      createdTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,      
+      updatedTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      createdBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
+      updatedBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
+    );
+  `;
+  try {
+    await dbConnection.query(query);
+    console.log("createExpenseTagTable - query executed");
+  }
+  catch (err) {
+    console.log("Error in executing", err);
+    throw (err);
+  }
+}
 async function createExpenseTable(dbConnection) {
   const query = `
     CREATE TABLE ${DB_SCHEMA}.EXPENSE (
       id serial PRIMARY KEY,
-      sub_type_id INT NOT NULL REFERENCES ${DB_SCHEMA}.EXPENSE_SUB_TYPE(id),
+      subTypeId INT NOT NULL REFERENCES ${DB_SCHEMA}.EXPENSE_SUB_TYPE(id),
       amount DECIMAL(12,2),
       description VARCHAR(500),
-      createdTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updatedTs TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      activeFlag CHAR(1) NOT NULL DEFAULT 'Y',
+      archiveFlag CHAR(1) NOT NULL DEFAULT 'N',
+      createdTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       createdBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
       updatedBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
     );
@@ -136,6 +163,28 @@ async function createExpenseTable(dbConnection) {
     console.log("Error in executing", err);
     throw (err);
   }
+}
+async function createExpenseTagJunctionTable(dbConnection) {
+  const query = `
+  CREATE TABLE ${DB_SCHEMA}.EXPENSE_TAG_JUNCTION (
+    id serial PRIMARY KEY,
+    tagId INT NOT NULL REFERENCES ${DB_SCHEMA}.EXPENSE_TAG(id),
+    expenseId INT NOT NULL REFERENCES ${DB_SCHEMA}.EXPENSE(id),
+    activeFlag CHAR(1) NOT NULL DEFAULT 'Y',
+    createdTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedTs TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    createdBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id),
+    updatedBy INT NOT NULL REFERENCES ${DB_SCHEMA}.USER(id)
+  );
+`;
+try {
+  await dbConnection.query(query);
+  console.log("createExpenseTagJunctionTable - query executed");
+}
+catch (err) {
+  console.log("Error in executing", err);
+  throw (err);
+}
 }
 async function executeDML() {
   const connectId = Date.now();
@@ -194,7 +243,7 @@ async function insertExpenseTypeTable(dbConnection) {
 }
 async function insertExpenseSubTypeTable(dbConnection) {
   let query = `
-      INSERT INTO ${DB_SCHEMA}.EXPENSE_SUB_TYPE(name, type_id, createdBy, updatedBy) VALUES
+      INSERT INTO ${DB_SCHEMA}.EXPENSE_SUB_TYPE(name, typeId, createdBy, updatedBy) VALUES
     `;
   let values = [];
   const keys = Object.keys(EXPENSE_SUB_TYPE);

@@ -13,13 +13,12 @@ async function trasnformer(data) {
             _hh = 0;
         if (AM_PM === 'PM')
             _hh = parseInt(HH, 10) + 12;
-
         date.setHours(_hh);
         date.setMinutes(MM);
         const _date = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(),
                 date.getUTCDate(), date.getUTCHours(),
                 date.getUTCMinutes(), date.getUTCSeconds()));
-
+        
         return {
             createdBy: _date,
             updatedBy: _date,
